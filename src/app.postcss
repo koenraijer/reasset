@@ -9,7 +9,7 @@ body {
 }
 
 input {
-	@apply input border-none p-0 m-0 !bg-transparent rounded-none h-full w-full focus:outline-none text-base text-center placeholder:text-base placeholder:text-surface-600-300-token
+	@apply input border-none p-0 m-0 !bg-transparent rounded-none h-full w-full focus:outline-none text-base text-center placeholder:text-base
 }
 
 button {
@@ -34,5 +34,33 @@ input[type=number] {
 }
 
 td:has(input) {
-	@apply hover:bg-surface-200-700-token hover:rounded-lg
+	@apply relative
+}
+td:has(input)::after {
+	content: url('/pen.svg')
+	@apply absolute top-0 right-0 h-full w-8 flex items-center justify-center
+}
+
+.table {
+	@apply !bg-surface-50-900-token
+}
+
+.table tbody tr {
+	background-color: rgb(var(--color-surface-500) / 0.02);
+}
+
+.table-interactive tbody tr {
+	@apply hover:bg-secondary-hover-token even:hover:bg-secondary-hover-token cursor-pointer;
+}
+
+ol li #numberSpan {
+	@apply bg-black rounded-full h-6 w-6 flex items-center justify-center text-surface-50-900-token mr-2
+}
+
+ol li {
+	@apply py-1
+}
+
+.accordion-control {
+	@apply bg-black rounded-lg
 }
