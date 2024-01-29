@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind variants;
+
+html,
+body {
+	@apply h-full overflow-hidden text-surface-900-50-token text-lg;
+}
+
+input {
+	@apply input border-none p-0 m-0 !bg-transparent rounded-none h-full w-full focus:outline-none text-base text-center placeholder:text-base placeholder:text-surface-600-300-token
+}
+
+button {
+	@apply btn variant-filled text-surface-50-900-token
+}
+
+label {
+	@apply label flex items-center
+}
+
+span {
+	@apply text-surface-900-50-token
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+td:has(input) {
+	@apply hover:bg-surface-200-700-token hover:rounded-lg
+}
