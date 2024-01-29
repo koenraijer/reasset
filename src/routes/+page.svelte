@@ -114,7 +114,7 @@
 				fund.amount += addAmount;
 				remainingCashInflow -= addAmount;
 				fund.difference = fund.desiredAmount - fund.amount;
-				advice.push(`Add <span class="font-semibold p-1 bg-success-500 text-white rounded-lg">${addAmount}</span> to ${fund.name}. `);				}
+				advice.push(`Add <span class="font-semibold p-1 bg-success-500 text-white rounded-lg">${addAmount.toFixed(2)}</span> to ${fund.name}.`);				}
 			});
 
 			toRemoveFunds.forEach(fund => {
@@ -123,7 +123,7 @@
 					fund.amount -= removeAmount;
 					remainingCashInflow += removeAmount;
 					fund.difference = fund.desiredAmount - fund.amount;
-					advice.push(`Remove <span class="font-semibold p-1 text-white rounded-lg bg-warning-500">${removeAmount}</span> from ${fund.name}. `);
+					advice.push(`Remove <span class="font-semibold p-1 text-white rounded-lg bg-warning-500">${removeAmount.toFixed(2)}</span> from ${fund.name}.`);
 				}
 			});
 
@@ -136,7 +136,7 @@
 				fundToAddTo.amount += transferAmount;
 				fundToRemoveFrom.difference = fundToRemoveFrom.desiredAmount - fundToRemoveFrom.amount;
 				fundToAddTo.difference = fundToAddTo.desiredAmount - fundToAddTo.amount;
-				advice.push(`Transfer <span class="font-semibold p-1 bg-neutral-500 rounded-lg text-white">${transferAmount}</span> from ${fundToRemoveFrom.name} to ${fundToAddTo.name}. `);				}
+				advice.push(`Transfer <span class="font-semibold p-1 bg-neutral-500 rounded-lg text-white">${transferAmount.toFixed(2)}</span> from ${fundToRemoveFrom.name} to ${fundToAddTo.name}.`);				}
 			}
 
 			generated = true;
@@ -194,14 +194,14 @@
 							</label>
 						</td>
 						<td class="text-center">
-							<button use:popup={{ event: 'click', target: `removePopup-${i+1}`, placement: 'bottom' }} class="py-2 h-fit">
+							<button use:popup={{ event: 'click', target: `removePopup-${i+1}`, placement: 'bottom', closeQuery: '#will-close' }} class="py-2 h-fit">
 								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
 									<path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
 								</svg>
 							</button>
 							<div class="card p-4 bg-secondary-500 text-white" data-popup="removePopup-{i+1}">
 							  <span class="text-base text-white">Are you sure?</span>
-							  <button on:click={() => removeFund(fund.id)} class="ml-1">Remove</button>
+							  <button id="will-close" on:click={() => removeFund(fund.id)} class="ml-1">Remove</button>
 							  <div class="arrow bg-secondary-500" />
 						  	</div>
 						</td>
@@ -278,7 +278,7 @@
 				<AccordionItem class="">
 					<svelte:fragment slot="lead"></svelte:fragment>
 					<svelte:fragment slot="summary">How do I obtain Target Allocations?</svelte:fragment>
-					<svelte:fragment slot="content">For example, say you set weights to the different assets according to market capitalisation. You would find the latest relative weights from a website such as https://marketcaps.site/ and then use those weights as your <strong>target allocation</strong> in this tool.</svelte:fragment>
+					<svelte:fragment slot="content">For example, say you set weights to the different assets according to market capitalisation. You would find the latest relative weights from a website such as <a href="https://marketcaps.site/" target="_blank" class="hover:underline text-secondary-500">https://marketcaps.site/</a> and then use those weights as your <strong>target allocation</strong> in this tool.</svelte:fragment>
 				</AccordionItem>
 			</Accordion>
 		</div>
