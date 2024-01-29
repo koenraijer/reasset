@@ -5,7 +5,7 @@
 	import { localStorageStore } from '@skeletonlabs/skeleton';
 	import { getToastStore } from '@skeletonlabs/skeleton';
 	import { clipboard } from '@skeletonlabs/skeleton';
-	import { fade } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import { Accordion, AccordionItem } from '@skeletonlabs/skeleton';
 
 	let showThumbsUp = false;
@@ -150,32 +150,13 @@
 		$: totalPercentage = funds.reduce((total, fund) => total + fund.desired_perc, 0);
 
 </script>
-  <div class="container h-full mx-auto flex flex-col flex-nowrap justify-center pt-10 pb-40 items-center">
+  <div class="container h-full mx-auto flex flex-col flex-nowrap justify-center py-10 items-center">
 	<!-- Responsive Container (recommended) -->
 	{#if loading}
 		<div class="flex justify-center items-center">
 			<div class="animate-spin rounded-full h-8 w-8 border-t-4 border-b-4 border-secondary-500 shadow-black shadow-sm"></div>
 		</div>
 	{:else}
-	<div class="bg-surface-50-900-token !text-surface-900-50-token w-full">
-		<Accordion autocollapse>
-			<AccordionItem class="">
-				<svelte:fragment slot="lead"></svelte:fragment>
-				<svelte:fragment slot="summary">WTF is this?</svelte:fragment>
-				<svelte:fragment slot="content">Hi</svelte:fragment>
-			</AccordionItem>
-			<AccordionItem class="">
-				<svelte:fragment slot="lead"></svelte:fragment>
-				<svelte:fragment slot="summary">How do I use it?</svelte:fragment>
-				<svelte:fragment slot="content">Hi</svelte:fragment>
-			</AccordionItem>
-			<AccordionItem class="">
-				<svelte:fragment slot="lead"></svelte:fragment>
-				<svelte:fragment slot="summary">What do I use it for?</svelte:fragment>
-				<svelte:fragment slot="content">Hi</svelte:fragment>
-			</AccordionItem>
-		</Accordion>
-	</div>
 	<div class="table-container">
 		<!-- Native Table Element -->
 		<table class="table table-interactive">
@@ -241,40 +222,66 @@
 					<td class="text-center relative">
 						{portfolioSum}</td>
 					<td colspan="2" class="">
-						<button class="ml-48" on:click={generate}>Generate</button>
+						<div class="w-full flex items-center">
+							<button class="w-fit mx-auto text-xl font-semibold" on:click={generate}>Generate</button>
+						</div>
 					</td>
 				</tr>
-				{#if generated}
 					<tr>
+
 						<td colspan="4" >
-							<span class="font-bold pb-4">Follow these steps to rebalance your portfolio:
-							</span>
-							<ol class="list pt-4">
-								{#each advice as item, i}
-										<li>
-											<span id="numberSpan">{i+1}</span>
-											<span class="flex-auto">{@html item}</span>
-										</li>
-										<!-- ... -->
-								{/each}
-							</ol>
-							<div class="flex items-center gap-x-2 pt-4">
-								<button class="btn variant-filled" on:click={handleCopyButtonClick} use:clipboard={adviceString}>
-									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-1">
-										<path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0 1 18 9.375v9.375a3 3 0 0 0 3-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 0 0-.673-.05A3 3 0 0 0 15 1.5h-1.5a3 3 0 0 0-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6ZM13.5 3A1.5 1.5 0 0 0 12 4.5h4.5A1.5 1.5 0 0 0 15 3h-1.5Z" clip-rule="evenodd" />
-										<path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 0 1 3 20.625V9.375ZM6 12a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75V12Zm2.25 0a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75ZM6 15a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75V15Zm2.25 0a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75ZM6 18a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75V18Zm2.25 0a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
-									</svg>
-									Copy
-								</button>
-								{#if showThumbsUp}
-									<span class="text-xl bg-surface-200 rounded-full p-1" out:fade={{ duration: 250 }}>&#x1F44D;</span>
-								{/if}
-							</div>
+							<details class="w-full" bind:open={generated}>
+								<summary style="display: none;"></summary>
+								<div class="transition-all duration-300" transition:slide={{ duration: 300 }}>
+									<span class="font-bold pb-4">Follow these steps to rebalance your portfolio:
+									</span>
+									<ol class="list pt-4">
+										{#each advice as item, i}
+												<li>
+													<span id="numberSpan">{i+1}</span>
+													<span class="flex-auto">{@html item}</span>
+												</li>
+												<!-- ... -->
+										{/each}
+									</ol>
+									<div class="flex items-center gap-x-2 pt-4">
+										<button class="btn variant-filled" on:click={handleCopyButtonClick} use:clipboard={adviceString}>
+											<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-1">
+												<path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0 1 18 9.375v9.375a3 3 0 0 0 3-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 0 0-.673-.05A3 3 0 0 0 15 1.5h-1.5a3 3 0 0 0-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6ZM13.5 3A1.5 1.5 0 0 0 12 4.5h4.5A1.5 1.5 0 0 0 15 3h-1.5Z" clip-rule="evenodd" />
+												<path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 0 1 3 20.625V9.375ZM6 12a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75V12Zm2.25 0a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75ZM6 15a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75V15Zm2.25 0a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75ZM6 18a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75V18Zm2.25 0a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+											</svg>
+											Copy
+										</button>
+										{#if showThumbsUp}
+											<span class="text-xl bg-surface-200 rounded-full p-1" out:fade={{ duration: 250 }}>&#x1F44D;</span>
+										{/if}
+									</div>
+								</div>
+							</details>
 						</td>
 					</tr>
-				{/if}
 			</tfoot>
 		</table>
+		<div class="bg-surface-50-900-token !text-surface-900-50-token w-full pt-10">
+			<h2 class="mb-2 text-xl font-bold w-full text-center">FAQ</h2>
+			<Accordion autocollapse>
+				<AccordionItem open class="">
+					<svelte:fragment slot="lead"></svelte:fragment>
+					<svelte:fragment slot="summary">WTF is this?</svelte:fragment>
+					<svelte:fragment slot="content">This is a web application designed to help you rebalance assets in your investment portfolio based on target allocations, or desired proportions, set by you. It does so in a way that ensures the <strong>minimum amount of transactions</strong>, saving you both time and money (transaction costs).</svelte:fragment>
+				</AccordionItem>
+				<AccordionItem class="">
+					<svelte:fragment slot="lead"></svelte:fragment>
+					<svelte:fragment slot="summary">How do I use it?</svelte:fragment>
+					<svelte:fragment slot="content">You can start by adding your current investments and their values. Then, set your target allocation for each investment. If you have new cash flow, enter the amount and the app will suggest how to distribute it to achieve your target allocation.</svelte:fragment>
+				</AccordionItem>
+				<AccordionItem class="">
+					<svelte:fragment slot="lead"></svelte:fragment>
+					<svelte:fragment slot="summary">How do I obtain Target Allocations?</svelte:fragment>
+					<svelte:fragment slot="content">For example, say you set weights to the different assets according to market capitalisation. You would find the latest relative weights from a website such as https://marketcaps.site/ and then use those weights as your <strong>target allocation</strong> in this tool.</svelte:fragment>
+				</AccordionItem>
+			</Accordion>
+		</div>
 	</div>
 	{/if}
   </div>
