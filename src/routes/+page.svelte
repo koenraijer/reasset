@@ -10,7 +10,8 @@
 	import { chosenPresetStore, fundsStore } from './stores'
 	export let data
 	import { getModalStore } from '@skeletonlabs/skeleton';
-	import { Confetti } from 'svelte-confetti'
+	import { Confetti } from "svelte-confetti"
+ 
 	import ToggleConfetti from '$lib/components/ToggleConfetti.svelte'
 
 	let funds = [];
@@ -93,7 +94,7 @@
 	/* ------------------- COPY BUTTON ------------------- */
 	let showThumbsUp = false;
 
-	function handleCopyButtonClick() {
+	function handleCopyButtonClick() {s
 		showThumbsUp = true;
 		setTimeout(() => {
 		showThumbsUp = false;
@@ -107,7 +108,6 @@
 	let toAdd = 250;
 	$: portfolioSum = funds.reduce((total, fund) => total + Number(fund.amount), 0) + toAdd;
 
-	$: console.log("PORTFOLIO SUM", portfolioSum);
 	let advice = [];
 	$: adviceString = advice.join(' ').replace(/<\/?[^>]+(>|$)/g, "");
 
@@ -218,6 +218,40 @@
 		function focusInput(id) {
 			document.getElementById(id).focus();
 		}		
+		
+		/* ------------------- DISCO ------------------- */
+
+		import { onDestroy } from 'svelte';
+
+		let colors = ['!shadow-tertiary-700', '!shadow-secondary-700', '!shadow-primary-700'];
+		let currentColorIndex = 0;
+		let currentColor = colors[currentColorIndex];
+		let intervalId;
+
+		$: {
+			// Clear any existing interval
+			if (intervalId) {
+				clearInterval(intervalId);
+				intervalId = null;
+			}
+
+			if (generated) {
+				// Start color changing
+				intervalId = setInterval(() => {
+					currentColorIndex = (currentColorIndex + 1) % colors.length;
+					currentColor = colors[currentColorIndex];
+					console.log(currentColor);
+				}, 1000);
+			}
+		}
+
+		// Cleanup interval when component is destroyed
+		onDestroy(() => {
+			if (intervalId) {
+				clearInterval(intervalId);
+			}
+		});
+
 </script>
 
   <div class="container h-full mx-auto flex flex-col flex-nowrap justify-center py-10 items-center">
@@ -227,9 +261,9 @@
 			<div class="animate-spin rounded-full h-8 w-8 border-t-4 border-b-4 border-secondary-500 shadow-black shadow-sm"></div>
 		</div>
 	{:else}
-	<div class="table-container w-full">
+	<div class="table-container w-full !shadow-2xl {currentColor}">
 		<!-- Native Table Element -->
-		<table class="table table-interactive rounded-container-token border-2 border-surface-900 dark:border-surface-400 !shadow-xl w-full">
+		<table class="table table-interactive rounded-container-token border-2 border-surface-900 dark:border-surface-400 w-full !shadow-2xl">
 			<thead class="rounded-container-token">
 				<tr class="bg-surface-900 dark:bg-surface-600 text-white">
 					<th class="text-center">Assets</th>
@@ -294,7 +328,7 @@
 						<div class="w-full flex items-center">
 							<ToggleConfetti>
 								<button slot="label" class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token" on:click={generate}>Generate</button>							
-								<Confetti y={[-1, 1]} x={[-1, 1]} noGravity duration=750 />
+								<Confetti y={[-1, 1]} x={[-1, 1]} noGravity duration=750/>
 							</ToggleConfetti>
 						</div>
 					</td>
@@ -366,3 +400,7 @@
 	</div>
 	{/if}
   </div>
+
+  <!--
+	Write me sveltekit code that alternates three variables in a certain rhythm, as though they are notes, or a discolamp that can form a rhythm. The colors are: !shadow-tertiary-700 !shadow-secondary-700 and !shadow-primary-700. You must allow me to alternate these colors in a certain proportion to each other easily. 
+  -->
