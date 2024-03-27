@@ -10,7 +10,9 @@
 	import { chosenPresetStore, fundsStore } from './stores'
 	export let data
 	import { getModalStore } from '@skeletonlabs/skeleton';
-			
+	import { Confetti } from 'svelte-confetti'
+	import ToggleConfetti from '$lib/components/ToggleConfetti.svelte'
+
 	let funds = [];
 	let fundAdded = false
     let loading = true;
@@ -284,13 +286,16 @@
 					</tr>
 			</tbody>
 			<tfoot>
-				<tr class="bg-surface-900 dark:bg-surface-600 text-white" >
+				<tr class="bg-surface-900 dark:bg-surface-600 text-white rounded-container-token" >
 					<th colspan="1">New Portfolio Total</th>
 					<td class="text-center relative cursor-default">
 						{portfolioSum}</td>
 					<td colspan="2" class="">
 						<div class="w-full flex items-center">
-							<button class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token" on:click={generate}>Generate</button>
+							<ToggleConfetti>
+								<button slot="label" class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token" on:click={generate}>Generate</button>							
+								<Confetti y={[-1, 1]} x={[-1, 1]} noGravity duration=750 />
+							</ToggleConfetti>
 						</div>
 					</td>
 				</tr>
