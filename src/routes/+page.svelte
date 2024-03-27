@@ -254,7 +254,13 @@
 
 </script>
 
-  <div class="container h-full mx-auto flex flex-col flex-nowrap justify-center py-10 items-center">
+  <div class="container h-full mx-auto flex flex-col flex-nowrap py-24 justify-start">
+	<div class="mb-48 mt-12 text-center" id="hero">
+		<h1 class="text-[5rem] font-extrabold mb-6">ReAsset</h1>
+		<h2 class="text-4xl font-normal">
+			Rebalance your portfolio, minimise transaction costs.
+		</h2>
+	</div>
 	<!-- Responsive Container (recommended) -->
 	{#if loading}
 		<div class="flex justify-center items-center">
