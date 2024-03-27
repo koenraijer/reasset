@@ -94,7 +94,7 @@
 	/* ------------------- COPY BUTTON ------------------- */
 	let showThumbsUp = false;
 
-	function handleCopyButtonClick() {s
+	function handleCopyButtonClick() {
 		showThumbsUp = true;
 		setTimeout(() => {
 		showThumbsUp = false;
@@ -336,7 +336,7 @@
 						<div class="w-full flex items-center">
 							<ToggleConfetti>
 								<button slot="label" class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token" on:click={generate}>Generate</button>							
-								<Confetti y={[-1, 1]} x={[-1, 1]} noGravity duration=750/>
+								<Confetti y={[-2, 2]} x={[-2, 2]} noGravity duration=750 amount=200/>
 							</ToggleConfetti>
 						</div>
 					</td>
