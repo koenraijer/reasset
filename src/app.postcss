@@ -3,6 +3,19 @@
 @tailwind utilities;
 @tailwind variants;
 
+@font-face {
+	/* Reference name */
+	font-family: 'MonaSans';
+	/* For multiple files use commas, ex: url(), url(), ... */
+	src: url('/fonts/MonaSans[slnt,wdth,wght].ttf');
+}
+@font-face {
+	/* Reference name */
+	font-family: 'HuboSans';
+	/* For multiple files use commas, ex: url(), url(), ... */
+	src: url('/fonts/HuboSans[slnt,wdth,wght].ttf');
+}
+
 html,
 body {
 	@apply h-full overflow-hidden text-surface-900-50-token text-lg;
@@ -77,4 +90,66 @@ ol li {
 .header-bg-dark {
 	background: rgb(51,14,135);
 	background: linear-gradient(128deg, rgba(51,14,135,1) 0%, rgba(65,51,155,1) 26%, rgba(130,217,245,1) 66%, rgba(249,232,77,1) 90%); 
+}
+
+.boujee-text {
+    --bg-size: 400%;
+    --color-one: #3a0ca3;
+    --color-two: #4cc9f0;
+    font-family: sans-serif;
+    background: linear-gradient(
+        90deg,
+        var(--color-one),
+        var(--color-two),
+        var(--color-one)
+      )
+      0 0 / var(--bg-size) 100%;
+    color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 0.01em transparent;
+    -webkit-text-stroke: 0.01em transparent;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .boujee-text {
+      animation: move-bg 16s linear infinite;
+    }
+    @keyframes move-bg {
+      to {
+        background-position: var(--bg-size) 0;
+      }
+    }
+}
+
+.titleClasses {
+    font-size: 8.85rem !important;
+	font-stretch: 130%;
+	font-weight: 900;
+	font-style: oblique 5deg;
+	@apply mt-12 py-12 transition-all duration-150;
+}
+
+.subtitleClasses {
+	font-family: 'HubotSans' !important;
+	font-size: 1.75rem !important;
+	font-style: oblique 5deg;
+	letter-spacing: 0.02em;
+	@apply mb-48 transition-all duration-150;
+} 
+
+.svgClasses {
+	height: 8.85rem !important;
+	@apply inline-block h-full aspect-square;
+}
+
+.svg-on-generate {
+	height: 4.425rem !important;
+}
+.title-on-generate {
+	font-size: 4.425rem !important;
+	@apply pb-0 mt-0 pt-0 text-gray-500/40
+}
+.subtitle-on-generate {
+	font-size: 0.875rem !important;
+	@apply mb-12 text-gray-500/40
 }

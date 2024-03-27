@@ -255,9 +255,11 @@
 </script>
 
   <div class="container h-full mx-auto flex flex-col flex-nowrap py-24 justify-start">
-	<div class="mb-48 mt-12 text-center" id="hero">
-		<h1 class="text-[5rem] font-extrabold mb-6">ReAsset</h1>
-		<h2 class="text-4xl font-normal">
+	<div class="text-center" id="hero">
+		<h1 class="titleClasses font-extrabold mb-6" class:title-on-generate={generated}>
+			ReAsset
+		</h1> <!-- class:boujee-text={generated}-->
+		<h2 class="subtitleClasses" class:subtitle-on-generate={generated}>
 			Rebalance your portfolio, minimise transaction costs.
 		</h2>
 	</div>
@@ -344,7 +346,7 @@
 					<td colspan="4" >
 						<details class="w-full" bind:open={generated}>
 							<summary style="display: none;"></summary>
-							<div class="transition-all duration-300" transition:slide={{ duration: 300 }}>
+							<div class="transition-all duration-150" transition:slide={{ duration: 300 }}>
 								<span class="font-bold pb-4">Follow these steps to rebalance your portfolio:
 								</span>
 								<ol class="list pt-4">
