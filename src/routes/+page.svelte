@@ -252,6 +252,27 @@
 			}
 		});
 
+		/* ------------------- KEYBOARD SHORTCUTS ------------------- */
+		onMount(() => {
+		const handleKeyDown = (event) => {
+			// Check if the pressed key is 'Enter' and the meta key (Command on Mac) is held down
+			if (event.key === 'Enter' && event.metaKey) {
+				console.log('Command + Enter pressed');
+				buttonElement.click();
+				// generate();
+			}
+		};
+
+		// Add the event listener
+		window.addEventListener('keydown', handleKeyDown);
+
+		// Remove the event listener when the component is destroyed
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+		};
+		});
+
+		let buttonElement;
 </script>
 
   <div class="container h-full mx-auto flex flex-col flex-nowrap py-24 justify-start">
@@ -335,7 +356,16 @@
 					<td colspan="2" class="">
 						<div class="w-full flex items-center">
 							<ToggleConfetti>
-								<button slot="label" class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token" on:click={generate}>Generate</button>							
+								<button slot="label" class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token pr-4" 
+									on:click={generate}
+									bind:this={buttonElement}
+								>
+									Generate
+									<span class="flex flex-row flex-nowrap pl-2 pr-0 mr-0 text-tertiary-700">
+										<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M180,140H164V116h16a40,40,0,1,0-40-40V92H116V76a40,40,0,1,0-40,40H92v24H76a40,40,0,1,0,40,40V164h24v16a40,40,0,1,0,40-40ZM164,76a16,16,0,1,1,16,16H164ZM60,76a16,16,0,0,1,32,0V92H76A16,16,0,0,1,60,76ZM92,180a16,16,0,1,1-16-16H92Zm24-64h24v24H116Zm64,80a16,16,0,0,1-16-16V164h16a16,16,0,0,1,0,32Z"></path></svg>
+										<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M71.51,144.49a12,12,0,0,1,0-17l24-24a12,12,0,0,1,17,17L109,124h55V104a12,12,0,0,1,24,0v32a12,12,0,0,1-12,12H109l3.52,3.51a12,12,0,0,1-17,17ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"></path></svg>
+									</span>
+								</button>							
 								<Confetti y={[-2, 2]} x={[-2, 2]} noGravity duration=750 amount=200/>
 							</ToggleConfetti>
 						</div>
