@@ -3,7 +3,8 @@ import { parse } from 'node-html-parser';
 
 export async function GET() {
     const data = await getContributions()
-    return json(data)
+    const funds = transformData(data)
+    return json(addIdAndAmount(funds))
 }
 
 async function getContributions() {
@@ -53,6 +54,47 @@ function parseTable(root, wrapperId) {
             });
             data.push(rowData);
         }
+    });
+    return data;
+}
+
+function transformData(data) {
+    let funds = {};
+
+    ['nt', 'msci', 'actiam'].forEach(key => {
+        funds[key] = {};
+        data[key].forEach(fund => {
+            ['2 funds', '3 funds', 'No EM'].forEach(type => {
+                if (fund[type] && fund[type] !== 'N/A') {
+                    let desired_perc = parseFloat(fund[type]);
+                    if (!isNaN(desired_perc)) {
+                        if (!funds[key][type]) {
+                            funds[key][type] = [];
+                        }
+                        funds[key][type].push({
+                            name: fund.Fund || fund.Index,
+                            desired_perc: desired_perc
+                        });
+                    }
+                }
+            });
+        });
+    });
+
+    return funds;
+}
+
+function addIdAndAmount(data) {
+    ['nt', 'msci', 'actiam'].forEach(key => {
+        ['2 funds', '3 funds', 'No EM'].forEach(type => {
+            if (data[key] && data[key][type]) {
+                data[key][type] = data[key][type].map((fund, index) => ({
+                    id: index + 1,
+                    amount: 0,
+                    ...fund
+                }));
+            }
+        });
     });
     return data;
 }
