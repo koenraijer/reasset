@@ -67,7 +67,7 @@ td:has(input)::after {
 }
 
 ol li #numberSpan {
-	@apply bg-primary-500 rounded-full h-6 w-6 flex items-center justify-center text-surface-50-900-token mr-2
+	@apply bg-[#aeaeae] border-black text-black border-2 rounded-full h-6 w-6 flex items-center justify-center mr-2
 }
 
 ol li {
@@ -121,20 +121,25 @@ ol li {
     }
 }
 
-.titleClasses {
-    font-size: 8.85rem !important;
-	font-stretch: 130%;
+.headerTitleClasses {
+	font-stretch: 150%;
 	font-weight: 900;
 	font-style: oblique 5deg;
-	@apply mt-12 py-12 transition-all duration-150;
+}
+.titleClasses {
+    font-size: 6.2rem !important;
+	font-stretch: 150%;
+	font-weight: 900;
+	font-style: oblique 5deg;
+	@apply pt-28 pb-6 transition-all duration-150;
 }
 
 .subtitleClasses {
 	font-family: 'HubotSans' !important;
-	font-size: 1.75rem !important;
+	font-size: 1.25rem !important;
 	font-style: oblique 5deg;
-	letter-spacing: 0.02em;
-	@apply mb-48 transition-all duration-150;
+	letter-spacing: 0.01em;
+	@apply mb-24 transition-all duration-150;
 } 
 
 .svgClasses {
@@ -143,13 +148,14 @@ ol li {
 }
 
 .svg-on-generate {
-	height: 4.425rem !important;
+	height: 3rem !important;
 }
 .title-on-generate {
-	font-size: 4.425rem !important;
-	@apply pb-0 mt-0 pt-0 text-gray-500/40
+	font-size: 3rem !important;
+	@apply pb-0 mt-0 pt-12 text-gray-500/40
 }
 .subtitle-on-generate {
-	font-size: 0.875rem !important;
+	font-size: 0.75rem !important;
+	letter-spacing: 0.005em;
 	@apply mb-12 text-gray-500/40
 }

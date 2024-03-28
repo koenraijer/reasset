@@ -1,24 +1,24 @@
 <script>
-	import { popup } from '@skeletonlabs/skeleton';
-	import { onMount } from 'svelte';
-	import { get } from 'svelte/store';
-	import { localStorageStore } from '@skeletonlabs/skeleton';
-	import { getToastStore } from '@skeletonlabs/skeleton';
-	import { clipboard } from '@skeletonlabs/skeleton';
-	import { fade, slide } from 'svelte/transition';
-	import { Accordion, AccordionItem } from '@skeletonlabs/skeleton';
-	import { chosenPresetStore, fundsStore } from './stores'
-	export let data
-	import { getModalStore } from '@skeletonlabs/skeleton';
-	import { Confetti } from "svelte-confetti"
- 
-	import ToggleConfetti from '$lib/components/ToggleConfetti.svelte'
+  import { popup } from "@skeletonlabs/skeleton";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
+  import { localStorageStore } from "@skeletonlabs/skeleton";
+  import { getToastStore } from "@skeletonlabs/skeleton";
+  import { clipboard } from "@skeletonlabs/skeleton";
+  import { fade, slide } from "svelte/transition";
+  import { Accordion, AccordionItem } from "@skeletonlabs/skeleton";
+  import { chosenPresetStore, fundsStore, triggerConfirmModal } from "./stores";
+  export let data;
+  import { getModalStore } from "@skeletonlabs/skeleton";
+  import { Confetti } from "svelte-confetti";
 
-	let funds = [];
-	let fundAdded = false
-    let loading = true;
+  import ToggleConfetti from "$lib/components/ToggleConfetti.svelte";
 
-	/*
+  let funds = [];
+  let fundAdded = false;
+  let loading = true;
+
+  /*
 		funds = [
 			{ id: 1, name: 'A', amount: 250, desired_perc: 25 },
 			{ id: 2, name: 'B', amount: 500, desired_perc: 25 },
@@ -26,394 +26,817 @@
 		];
 	*/
 
-	function changePreset(newPreset) {
-		fundAdded = false; // set fundAdded to false
-		chosenPreset = newPreset; // update the chosenPreset
-	}
+  function changePreset(newPreset) {
+    fundAdded = false; // set fundAdded to false
+    chosenPreset = newPreset; // update the chosenPreset
+  }
 
-	onMount(async () => {
-        try {
-            // subscribe to the store to update the 'funds' variable whenever the store changes
-            fundsStore.subscribe(value => {
-                funds = value;
-                loading = false;
-            });
-        } catch (error) {
-            console.log(error);
-            toastStore.trigger({message: 'Error loading saved funds.', background: 'variant-filled-error',})
-			generated = false;
+  onMount(async () => {
+    try {
+      // subscribe to the store to update the 'funds' variable whenever the store changes
+      fundsStore.subscribe((value) => {
+        funds = value;
+        loading = false;
+      });
+    } catch (error) {
+      console.log(error);
+      toastStore.trigger({
+        message: "Error loading saved funds.",
+        ...toastSettings,
+      });
+      generated = false;
+    }
+    try {
+      chosenPresetStore.subscribe((value) => {
+        changePreset(value);
+        confirmed = false;
+      });
+    } catch (error) {
+      console.log(error);
+      toastStore.trigger({
+        message: "Error loading saved preset.",
+        ...toastSettings,
+      });
+      generated = false;
+    }
+  });
+
+  /* ------------------- MODAL ------------------- */
+  const modalStore = getModalStore();
+  const modal = {
+    type: "confirm",
+    modalClasses: "p-8 text-base border-2 border-black",
+    // Data
+    title: "Are you sure you wish to remove the preset?",
+    body: "Removing the preset will delete all configured funds. This action cannot be undone.",
+    // TRUE if confirm pressed, FALSE if cancel pressed
+    response: (r) => {
+      $triggerConfirmModal = false;
+      if (r) {
+        fundsStore.set([]); // update the store
+        chosenPresetStore.set("Choose preset");
+        confirmed = true;
+        generated = false;
+      } else {
+        chosenPreset = previousPreset; // Revert to the previous preset
+      }
+    },
+  };
+  let confirmed = true; // TRUE if confirm pressed, FALSE if cancel pressed
+
+  /* ------------------- PRESET ------------------- */
+  let chosenPreset;
+  let previousPreset;
+
+  $: {
+    if (chosenPreset && !fundAdded) {
+      if (chosenPreset !== previousPreset) {
+        previousPreset = chosenPreset; // Update the previous preset
+      }
+      if (chosenPreset === "Choose preset" && !confirmed) {
+        fundsStore.set([]); // update the store
+        generated = false;
+      } else {
+        const [key, type] = chosenPreset.split(": ").map((str) => str.trim());
+        if (
+          data.data[key.toLowerCase()] &&
+          data.data[key.toLowerCase()][type]
+        ) {
+          fundsStore.set(data.data[key.toLowerCase()][type]);
         }
-		try {
-			chosenPresetStore.subscribe(value => {
-				changePreset(value);
-				confirmed = false;
-			});
-		} catch (error) {
-			console.log(error);
-			toastStore.trigger({message: 'Error loading saved preset.', background: 'variant-filled-error',})
-			generated = false;
-		}
+        fundAdded = false;
+      }
+    }
+  }
+
+  /* ------------------- COPY BUTTON ------------------- */
+  let showThumbsUp = false;
+
+  function handleCopyButtonClick() {
+    showThumbsUp = true;
+    setTimeout(() => {
+      showThumbsUp = false;
+    }, 1500);
+  }
+
+  /* ------------------- FUNDS AND REBALANCING ------------------- */
+  let generated = false;
+  let toAdd = 250;
+  $: portfolioSum =
+    funds.reduce((total, fund) => total + Number(fund.amount), 0) + toAdd;
+
+  let advice = [];
+  $: adviceString = advice.join(" ").replace(/<\/?[^>]+(>|$)/g, "");
+
+  function addFund() {
+    const newFund = {
+      id: get(fundsStore).length + 1,
+      name: "",
+      amount: 0,
+      desired_perc: 0,
+    };
+    fundsStore.update((funds) => [...funds, newFund]); // update the store
+    fundAdded = true;
+    generated = false;
+  }
+
+  function removeFund(id) {
+    fundsStore.update((funds) => funds.filter((fund) => fund.id !== id)); // update the store
+	generated = false;
+  }
+
+  let hasError = false;
+
+  function generate() {
+	hasError = false
+    advice = [];
+    // Check if there are any funds
+    if (funds.length === 0) {
+		hasError = true
+      toastStore.trigger({
+        message: "Please add one or more assets.",
+        ...toastSettings,
+      });
+      generated = false;
+      return;
+    }
+    // Check if all of the "desired_perc" add up to 100%
+    const totalPercentage = funds.reduce(
+      (total, fund) => total + Number(fund.desired_perc),
+      0,
+    );
+
+    if (totalPercentage !== 100) {
+		hasError = true
+      toastStore.trigger({
+        message: "The desired percentages do not add up to 100%.",
+        ...toastSettings,
+      });
+      generated = false;
+      return;
+    }
+
+    // Check if the total portfolio value is greater than the cash outflow.
+    if (toAdd > portfolioSum) {
+		hasError = true
+      toastStore.trigger({
+        message: "The cash outflow is greater than the total portfolio value.",
+        ...toastSettings,
+      });
+      generated = false;
+      return;
+    }
+
+    // Check if any fields are empty
+    const emptyFieldFund = funds.find(
+      (fund) =>
+        !fund.id ||
+        !fund.name ||
+        fund.amount === null ||
+        fund.amount === undefined ||
+        fund.amount === "" ||
+        !fund.desired_perc,
+    );
+    if (emptyFieldFund) {
+      const emptyFields = Object.entries(emptyFieldFund)
+        .filter(([key, value]) => !value)
+        .map(([key]) => key);
+		hasError = true
+      toastStore.trigger({
+        message: `One or more required fields are missing.`,
+        ...toastSettings,
+      });
+      generated = false;
+      return;
+    }
+
+    // 1. Calculate desired value per fund including new cash flow and calculate diff. between current and desired values.
+    const fundChanges = funds.map((fund) => {
+      const desiredAmount = (portfolioSum * fund.desired_perc) / 100;
+      const difference = desiredAmount - fund.amount;
+      return { ...fund, desiredAmount, difference };
     });
 
-	/* ------------------- MODAL ------------------- */
-	const modalStore = getModalStore();
-	const modal = {
-		type: 'confirm',
-		modalClasses: 'p-8 text-base border-2 border-black',
-		// Data
-		title: 'Are you sure you wish to remove the preset?',
-		body: 'Removing the preset will delete all configured funds. This action cannot be undone.',
-		// TRUE if confirm pressed, FALSE if cancel pressed
-		response: (r) => {
-			if (r) {
-				fundsStore.set([]); // update the store
-				confirmed = true;
-				generated = false
-			}
-		}
-	};
-	let confirmed = true; // TRUE if confirm pressed, FALSE if cancel pressed
+    // 2. Split funds into two arrays: one for funds where you need to add, and one for funds where you need to remove.
+    let toAddFunds = fundChanges.filter((fund) => fund.difference > 0);
+    let toRemoveFunds = fundChanges.filter((fund) => fund.difference < 0);
 
-	/* ------------------- PRESET ------------------- */
-	let chosenPreset;
+    // 4. For funds where you need to add, sort them in descending order of difference. Start adding from the fund with the highest difference. This minimizes the number of transactions.
+    toAddFunds.sort((a, b) => b.difference - a.difference);
 
-	$: {
-		if (chosenPreset && !fundAdded) {
-			if (chosenPreset === 'Choose preset' && !confirmed) {
-				modalStore.trigger(modal);
-			}
-			const [key, type] = chosenPreset.split(': ').map(str => str.trim());
-			if (data.data[key.toLowerCase()] && data.data[key.toLowerCase()][type]) {
-				fundsStore.set(data.data[key.toLowerCase()][type]);
-			}
-			fundAdded = false;
-			console.log(funds);
-		}		
-	}
-	
-	/* ------------------- COPY BUTTON ------------------- */
-	let showThumbsUp = false;
+    // 5. For funds where you need to remove, sort them in ascending order of difference. Start removing from the fund with the lowest difference. This also minimizes the number of transactions.
+    toRemoveFunds.sort((a, b) => a.difference - b.difference);
 
-	function handleCopyButtonClick() {
-		showThumbsUp = true;
-		setTimeout(() => {
-		showThumbsUp = false;
-		}, 1500);
-	}
+    // 6. Keep track of the remaining cash inflow. When adding to a fund, subtract the added amount from the remaining cash inflow. When removing from a fund, add the removed amount to the remaining cash inflow.
+    let remainingCashInflow = toAdd;
 
-	/* ------------------- FUNDS AND REBALANCING ------------------- */
-    const toastStore = getToastStore();
+    // 8. Repeat steps 5-7 until the remaining cash inflow is zero or close enough.
+    while (
+      toAddFunds.some((fund) => fund.difference > 0.01) ||
+      toRemoveFunds.some((fund) => fund.difference < -0.01)
+    ) {
+      ("Iterating");
+      toAddFunds.forEach((fund) => {
+        if (remainingCashInflow > 0.01) {
+          const addAmount = Math.min(fund.difference, remainingCashInflow);
+          fund.amount += addAmount;
+          remainingCashInflow -= addAmount;
+          // fund.difference = fund.desiredAmount - fund.amount;
+          advice.push(
+            `Add <span class="py-1 px-2 mx-1 font-semibold bg-success-backdrop-token text-black rounded-lg border-2 border-black">${addAmount.toFixed(2)}</span> to ${fund.name}.`,
+          );
+        }
+        fund.difference = fund.desiredAmount - fund.amount;
+      });
 
-	let generated = false; 
-	let toAdd = 250;
-	$: portfolioSum = funds.reduce((total, fund) => total + Number(fund.amount), 0) + toAdd;
+      toRemoveFunds.forEach((fund) => {
+        if (remainingCashInflow < -0.01) {
+          const removeAmount = Math.min(-fund.difference, -remainingCashInflow);
+          fund.amount -= removeAmount;
+          remainingCashInflow += removeAmount;
+          // fund.difference = fund.desiredAmount - fund.amount;
+          advice.push(
+            `Remove <span class="py-1 px-2 mx-1 font-semibold rounded-lg bg-warning-backdrop-token border-2 border-black">${removeAmount.toFixed(2)}</span> from ${fund.name}.`,
+          );
+        }
+        fund.difference = fund.desiredAmount - fund.amount;
+      });
 
-	let advice = [];
-	$: adviceString = advice.join(' ').replace(/<\/?[^>]+(>|$)/g, "");
+      if (Math.abs(remainingCashInflow) <= 0.01) {
+        const fundToRemoveFrom = toRemoveFunds.find(
+          (fund) => fund.difference < -0.01,
+        );
+        const fundToAddTo = toAddFunds.find((fund) => fund.difference > 0.01);
+        if (fundToRemoveFrom && fundToAddTo) {
+          const transferAmount = Math.min(
+            -fundToRemoveFrom.difference,
+            fundToAddTo.difference,
+          );
+          fundToRemoveFrom.amount -= transferAmount;
+          fundToAddTo.amount += transferAmount;
+          fundToRemoveFrom.difference =
+            fundToRemoveFrom.desiredAmount - fundToRemoveFrom.amount;
+          fundToAddTo.difference =
+            fundToAddTo.desiredAmount - fundToAddTo.amount;
+          advice.push(
+            `Transfer <span class="px-2 py-1 mx-1 font-semibold bg-surface-backdrop-token rounded-lg text-white border-2 border-black">${transferAmount.toFixed(2)}</span> from ${fundToRemoveFrom.name} to ${fundToAddTo.name}.`,
+          );
+        }
+      }
 
-	function addFund() {
-		const newFund = { id: get(fundsStore).length + 1, name: '', amount: 0, desired_perc: 0 };
-		fundsStore.update(funds => [...funds, newFund]); // update the store
-		fundAdded = true;
-		console.log("FUND ADDED", funds);
-	}
+      generated = true;
+    }
+  }
 
-	function removeFund(id) { 
-		fundsStore.update(funds => funds.filter(fund => fund.id !== id)); // update the store
-	}
+  function focusInput(id) {
+    document.getElementById(id).focus();
+  }
 
-	function generate() {
-		advice = [];
-		// Check if all of the "desired_perc" add up to 100%
-		const totalPercentage = funds.reduce((total, fund) => total + Number(fund.desired_perc), 0);
-		if (totalPercentage !== 100) {
-			toastStore.trigger({message: 'The desired percentages do not add up to 100%.', 	background: 'variant-filled-error',})
-			generated = false;
-			return;
-		}
+  /* ------------------- DISCO ------------------- */
 
-		// Check if the total portfolio value is greater than the cash outflow.
-		if (toAdd > portfolioSum) {
-			toastStore.trigger({message: 'The cash outflow is greater than the total portfolio value.', background: 'variant-filled-error',})
-			generated = false;
-			return;
-		}
+  import { onDestroy } from "svelte";
 
-		// Check if any fields are empty
-		const emptyFieldFund = funds.find(fund => 
-			!fund.id || 
-			!fund.name || 
-			(fund.amount === null || fund.amount === undefined || fund.amount === '') || 
-			!fund.desired_perc
-		);
-		if (emptyFieldFund) {
-			console.log(emptyFieldFund);
-			const emptyFields = Object.entries(emptyFieldFund).filter(([key, value]) => !value).map(([key]) => key);
-			toastStore.trigger({message: `The following fields are missing: ${emptyFields.join(', ')}`, background: 'variant-filled-error',})
-			generated = false;
-			return;
-		}
-		
-		// 1. Calculate desired value per fund including new cash flow and calculate diff. between current and desired values.
-		const fundChanges = funds.map(fund => {
-			const desiredAmount = (portfolioSum * fund.desired_perc) / 100;
-			const difference = desiredAmount - fund.amount;
-			return { ...fund, desiredAmount, difference };
-		});
+  let colors = [
+    "!shadow-tertiary-700",
+    "!shadow-secondary-700",
+    "!shadow-primary-700",
+  ];
+  let currentColorIndex = 0;
+  let currentColor = colors[currentColorIndex];
+  let intervalId;
 
-		// 2. Split funds into two arrays: one for funds where you need to add, and one for funds where you need to remove.
-		let toAddFunds = fundChanges.filter(fund => fund.difference > 0);
-		let toRemoveFunds = fundChanges.filter(fund => fund.difference < 0);
+  $: {
+    // Clear any existing interval
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
 
-		// 4. For funds where you need to add, sort them in descending order of difference. Start adding from the fund with the highest difference. This minimizes the number of transactions.
-		toAddFunds.sort((a, b) => b.difference - a.difference);
+    if (generated) {
+      // Start color changing
+      intervalId = setInterval(() => {
+        currentColorIndex = (currentColorIndex + 1) % colors.length;
+        currentColor = colors[currentColorIndex];
+      }, 1000);
+    }
+  }
 
-		// 5. For funds where you need to remove, sort them in ascending order of difference. Start removing from the fund with the lowest difference. This also minimizes the number of transactions.
-		toRemoveFunds.sort((a, b) => a.difference - b.difference);
+  // Cleanup interval when component is destroyed
+  onDestroy(() => {
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+  });
 
-		// 6. Keep track of the remaining cash inflow. When adding to a fund, subtract the added amount from the remaining cash inflow. When removing from a fund, add the removed amount to the remaining cash inflow.
-		let remainingCashInflow = toAdd;
+  /* ------------------- KEYBOARD SHORTCUTS ------------------- */
+  onMount(() => {
+    const handleKeyDown = (event) => {
+      // Check if the pressed key is 'Enter' and the meta key (Command on Mac) is held down
+      if (event.key === "Enter" && event.metaKey) {
+        buttonElement.click();
+        // generate();
+      }
+      // Check if escape key is pressed
+      if (event.key === "Escape") {
+        restartButtonElement.click();
+      }
+    };
 
-		// 8. Repeat steps 5-7 until the remaining cash inflow is zero or close enough.
-		while (toAddFunds.some(fund => fund.difference > 0.01) || toRemoveFunds.some(fund => fund.difference < -0.01)) {
-			"Iterating"
-			toAddFunds.forEach(fund => {
-				if (remainingCashInflow > 0.01) {
-					const addAmount = Math.min(fund.difference, remainingCashInflow);
-					fund.amount += addAmount;
-					remainingCashInflow -= addAmount;
-					// fund.difference = fund.desiredAmount - fund.amount;
-					advice.push(`Add <span class="py-1 px-2 font-semibold bg-success-backdrop-token text-black rounded-lg border-2 border-black">${addAmount.toFixed(2)}</span> to ${fund.name}.`);				
-				}
-				fund.difference = fund.desiredAmount - fund.amount;
-			});
+    // Add the event listener
+    window.addEventListener("keydown", handleKeyDown);
 
-			toRemoveFunds.forEach(fund => {
-				if (remainingCashInflow < -0.01) {
-					const removeAmount = Math.min(-fund.difference, -remainingCashInflow);
-					fund.amount -= removeAmount;
-					remainingCashInflow += removeAmount;
-					// fund.difference = fund.desiredAmount - fund.amount;
-					advice.push(`Remove <span class="py-1 px-2 font-semibold rounded-lg bg-warning-backdrop-token border-2 border-black">${removeAmount.toFixed(2)}</span> from ${fund.name}.`);
-				}
-				fund.difference = fund.desiredAmount - fund.amount;
-			});
+    // Remove the event listener when the component is destroyed
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 
-			if (Math.abs(remainingCashInflow) <= 0.01) {
-				const fundToRemoveFrom = toRemoveFunds.find(fund => fund.difference < -0.01);
-				const fundToAddTo = toAddFunds.find(fund => fund.difference > 0.01);
-				if (fundToRemoveFrom && fundToAddTo) {
-				const transferAmount = Math.min(-fundToRemoveFrom.difference, fundToAddTo.difference);
-				fundToRemoveFrom.amount -= transferAmount;
-				fundToAddTo.amount += transferAmount;
-				fundToRemoveFrom.difference = fundToRemoveFrom.desiredAmount - fundToRemoveFrom.amount;
-				fundToAddTo.difference = fundToAddTo.desiredAmount - fundToAddTo.amount;
-				advice.push(`Transfer <span class="px-2 py-1 font-semibold bg-surface-backdrop-token rounded-lg text-white border-2 border-black">${transferAmount.toFixed(2)}</span> from ${fundToRemoveFrom.name} to ${fundToAddTo.name}.`);				}
-			}
+  let buttonElement;
+  let restartButtonElement;
 
-			generated = true;
-		}
-		}
+  /* ------------------- TOAST SETTINGS ------------------- */
+  const toastStore = getToastStore();
 
-		function focusInput(id) {
-			document.getElementById(id).focus();
-		}		
-		
-		/* ------------------- DISCO ------------------- */
+  const toastSettings = {
+    background: "bg-error-backdrop-token",
+    classes: "mr-4 mb-4 border-2 border-black",
+  };
 
-		import { onDestroy } from 'svelte';
+  /* ------------------- POPUPS ------------------- */
+  const assetPopup = {
+    event: "click",
+    target: "assetPopup",
+    placement: "top",
+    middleware: {
+      shift: {
+        padding: 8,
+      },
+      offset: 12,
+    },
+  };
 
-		let colors = ['!shadow-tertiary-700', '!shadow-secondary-700', '!shadow-primary-700'];
-		let currentColorIndex = 0;
-		let currentColor = colors[currentColorIndex];
-		let intervalId;
-
-		$: {
-			// Clear any existing interval
-			if (intervalId) {
-				clearInterval(intervalId);
-				intervalId = null;
-			}
-
-			if (generated) {
-				// Start color changing
-				intervalId = setInterval(() => {
-					currentColorIndex = (currentColorIndex + 1) % colors.length;
-					currentColor = colors[currentColorIndex];
-					console.log(currentColor);
-				}, 1000);
-			}
-		}
-
-		// Cleanup interval when component is destroyed
-		onDestroy(() => {
-			if (intervalId) {
-				clearInterval(intervalId);
-			}
-		});
-
-		/* ------------------- KEYBOARD SHORTCUTS ------------------- */
-		onMount(() => {
-		const handleKeyDown = (event) => {
-			// Check if the pressed key is 'Enter' and the meta key (Command on Mac) is held down
-			if (event.key === 'Enter' && event.metaKey) {
-				console.log('Command + Enter pressed');
-				buttonElement.click();
-				// generate();
-			}
-		};
-
-		// Add the event listener
-		window.addEventListener('keydown', handleKeyDown);
-
-		// Remove the event listener when the component is destroyed
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown);
-		};
-		});
-
-		let buttonElement;
+  const newCapitalPopup = {
+	event: "click",
+	target: "newCapitalPopup",
+	placement: "left",
+	middleware: {
+	  shift: {
+		padding: 8,
+	  },
+	  offset: 12,
+	},
+  };
+  
+  const currentValuePopup = {
+    event: "click",
+    target: "currentValuePopup",
+    placement: "top",
+    closeQuery: ".popupMustClose",
+    middleware: {
+      shift: {
+        padding: 8,
+      },
+      offset: 12,
+    },
+  };
+  const targetAllocationPopup = {
+    event: "click",
+    target: "targetAllocationPopup",
+    placement: "top",
+    closeQuery: ".popupMustClose",
+    middleware: {
+      shift: {
+        padding: 8,
+      },
+      offset: 12,
+    },
+  };
 </script>
 
-  <div class="container h-full mx-auto flex flex-col flex-nowrap py-24 justify-start">
-	<div class="text-center" id="hero">
-		<h1 class="titleClasses font-extrabold mb-6" class:title-on-generate={generated}>
-			ReAsset
-		</h1> <!-- class:boujee-text={generated}-->
-		<h2 class="subtitleClasses" class:subtitle-on-generate={generated}>
-			Rebalance your portfolio, minimise transaction costs.
-		</h2>
-	</div>
-	<!-- Responsive Container (recommended) -->
-	{#if loading}
-		<div class="flex justify-center items-center">
-			<div class="animate-spin rounded-full h-8 w-8 border-t-4 border-b-4 border-secondary-500 shadow-black shadow-sm"></div>
-		</div>
-	{:else}
-	<div class="table-container w-full !shadow-2xl {currentColor}">
-		<!-- Native Table Element -->
-		<table class="table table-interactive rounded-container-token border-2 border-surface-900 dark:border-surface-400 w-full !shadow-2xl">
-			<thead class="rounded-container-token">
-				<tr class="bg-surface-900 dark:bg-surface-600 text-white">
-					<th class="text-center">Assets</th>
-					<th class="text-center">Current Value</th>
-					<th class="text-center transition-colors duration-300">Target allocation (%)</th>
-					<th class="text-center">
-						<button on:click={addFund} class="variant-filled-secondary"> <!--{chosenPreset !== "Choose preset" ? "bg-surface-500/50 text-gray-400 hover:bg-none cursor-not-allowed" : "variant-filled-secondary"}-->
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mr-1">
-								<path d="M6 3a3 3 0 0 0-3 3v2.25a3 3 0 0 0 3 3h2.25a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3H6ZM15.75 3a3 3 0 0 0-3 3v2.25a3 3 0 0 0 3 3H18a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3h-2.25ZM6 12.75a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h2.25a3 3 0 0 0 3-3v-2.25a3 3 0 0 0-3-3H6ZM17.625 13.5a.75.75 0 0 0-1.5 0v2.625H13.5a.75.75 0 0 0 0 1.5h2.625v2.625a.75.75 0 0 0 1.5 0v-2.625h2.625a.75.75 0 0 0 0-1.5h-2.625V13.5Z" />
-							</svg>
-							Add fund</button>
-					</th>
-				</tr>
-			</thead>
-			<tbody class="rounded-container-token">
-				{#each funds as fund, i}
-					<tr id="fund-{i+1}">
-						<td on:click={() => focusInput(`name-${i}`)} class="cursor-text">
-							<label class="">
-								<input id={`name-${i}`} class="" bind:value={fund.name} type="text" placeholder="Fund name" />
-							</label>
-						</td>
-						<td on:click={() => focusInput(`amount-${i}`)} class="cursor-text">
-							<label>
-								<input id={`amount-${i}`} bind:value={fund.amount} type="number" placeholder="Amount" class="relative after:" />
-							</label>
-						</td>
-						<td on:click={() => focusInput(`desired_perc-${i}`)} class="cursor-text">
-							<label>
-								<input id={`desired_perc-${i}`} bind:value={fund.desired_perc} type="number" placeholder="Desired %" 
-								 />
-							</label>
-						</td>
-						<td class="text-center cursor-default">
-							<button use:popup={{ event: 'click', target: `removePopup-${i+1}`, placement: 'bottom', closeQuery: '#will-close' }} class="py-2 h-fit btn rounded-container-token px-2 text-black hover:bg-surface-hover-token outline-none border-2 border-surface-400-500-token">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-									<path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
-								</svg>
-							</button>
-							<div class="card p-4 z-1 bg-surface-100-800-token border-2 border-surface-400-500-token" data-popup="removePopup-{i+1}">
-							  <span class="text-base font-semibold pb-2 mb-2">Are you sure?</span>
-							  <button id="will-close" on:click={() => removeFund(fund.id)} class="ml-1 w-full mt-2 btn variant-filled rounded-container-token">Delete</button>
-						  	</div>
-						</td>
-					</tr>
-				{/each}
-					<tr>
-						<th colspan="1" class="cursor-default">New capital</th>
-						<td on:click={() => focusInput(`to_add`)} class="cursor-text">
-							<input id="to_add" bind:value={toAdd} class="w-ful text-center" placeholder="Portfolio amount" type="number" />
-						</td>
-						<td on:click={() => focusInput(`to_add`)} class="cursor-not-allowed"></td>
-						<td on:click={() => focusInput(`to_add`)} class="cursor-not-allowed"></td>
-					</tr>
-			</tbody>
-			<tfoot>
-				<tr class="bg-surface-900 dark:bg-surface-600 text-white rounded-container-token" >
-					<th colspan="1">New Portfolio Total</th>
-					<td class="text-center relative cursor-default">
-						{portfolioSum}</td>
-					<td colspan="2" class="">
-						<div class="w-full flex items-center">
-							<ToggleConfetti>
-								<button slot="label" class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token pr-4" 
-									on:click={generate}
-									bind:this={buttonElement}
-								>
-									Generate
-									<span class="flex flex-row flex-nowrap pl-2 pr-0 mr-0 text-tertiary-700">
-										<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M180,140H164V116h16a40,40,0,1,0-40-40V92H116V76a40,40,0,1,0-40,40H92v24H76a40,40,0,1,0,40,40V164h24v16a40,40,0,1,0,40-40ZM164,76a16,16,0,1,1,16,16H164ZM60,76a16,16,0,0,1,32,0V92H76A16,16,0,0,1,60,76ZM92,180a16,16,0,1,1-16-16H92Zm24-64h24v24H116Zm64,80a16,16,0,0,1-16-16V164h16a16,16,0,0,1,0,32Z"></path></svg>
-										<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M71.51,144.49a12,12,0,0,1,0-17l24-24a12,12,0,0,1,17,17L109,124h55V104a12,12,0,0,1,24,0v32a12,12,0,0,1-12,12H109l3.52,3.51a12,12,0,0,1-17,17ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"></path></svg>
-									</span>
-								</button>							
-								<Confetti y={[-2, 2]} x={[-2, 2]} noGravity duration=750 amount=200/>
-							</ToggleConfetti>
-						</div>
-					</td>
-				</tr>
-				{#if generated}
-				<tr class="rounded-bl-container-token rounded-br-container-token">
-					<td colspan="4" >
-						<details class="w-full" bind:open={generated}>
-							<summary style="display: none;"></summary>
-							<div class="transition-all duration-150" transition:slide={{ duration: 300 }}>
-								<span class="font-bold pb-4">Follow these steps to rebalance your portfolio:
-								</span>
-								<ol class="list pt-4">
-									{#each advice as item, i}
-											<li>
-												<span id="numberSpan">{i+1}</span>
-												<span class="flex-auto">{@html item}</span>
-											</li>
-											<!-- ... -->
-									{/each}
-								</ol>
-								<div class="flex flex-row flex-nowrap gap-x-4">
-									<div class="flex items-center gap-x-2 pt-4">
-										<button class="btn variant-filled rounded-container-token border-2 border-black" on:click={handleCopyButtonClick} use:clipboard={adviceString}>
-											<div class="relative w-6 h-6 mr-1">
-												{#if !showThumbsUp}
-													<svg xmlns="http://www.w3.org/2000/svg" in:fade={{ duration: 75 }} width="32" height="32" fill="currentColor" class="w-6 h-6 mr-1" viewBox="0 0 256 256"><path d="M216,40V168H168V88H88V40Z" opacity="0.2"></path><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"></path></svg>
-												{:else}
-													<svg xmlns="http://www.w3.org/2000/svg" out:fade={{ duration: 75 }} width="32" height="32" fill="currentColor" class="text-xl absolute -top-1 left-0 pr-1 pt-1" viewBox="0 0 256 256"><path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z" opacity="0.2"></path><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path></svg>
-												{/if}
-											</div>
-											Copy
-										</button>
-									</div>
-									<button class="btn border-2 border-black rounded-container-token mt-4 text-black hover:bg-primary-hover-token" on:click={() => generated = false}>
-										<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5 mr-1" viewBox="0 0 256 256"><path d="M20,128A76.08,76.08,0,0,1,96,52h99l-3.52-3.51a12,12,0,1,1,17-17l24,24a12,12,0,0,1,0,17l-24,24a12,12,0,0,1-17-17L195,76H96a52.06,52.06,0,0,0-52,52,12,12,0,0,1-24,0Zm204-12a12,12,0,0,0-12,12,52.06,52.06,0,0,1-52,52H61l3.52-3.51a12,12,0,1,0-17-17l-24,24a12,12,0,0,0,0,17l24,24a12,12,0,1,0,17-17L61,204h99a76.08,76.08,0,0,0,76-76A12,12,0,0,0,224,116Z"></path></svg>
-										Restart
-									</button>
-								</div>
-							</div>
-						</details>
-					</td>
-				</tr>
-				{/if}
-			</tfoot>
-		</table>
-		<!--
+<div
+  class="container h-full mx-auto flex flex-col flex-nowrap pb-24 justify-start"
+>
+  <div class="text-center" id="hero">
+    <h1
+      class="titleClasses font-extrabold mb-6"
+      class:title-on-generate={generated}
+    >
+      ReAsset
+    </h1>
+    <!-- class:boujee-text={generated}-->
+    <h2 class="subtitleClasses" class:subtitle-on-generate={generated}>
+      Rebalance your portfolio, minimise transaction costs.
+    </h2>
+  </div>
+  <!-- Responsive Container (recommended) -->
+  {#if loading}
+    <div class="flex justify-center items-center">
+      <div
+        class="animate-spin rounded-full h-8 w-8 border-t-4 border-b-4 border-secondary-500 shadow-black shadow-sm"
+      ></div>
+    </div>
+  {:else}
+    <div class="table-container w-full !shadow-2xl {currentColor}">
+      <!-- Native Table Element -->
+      <table
+        class="table table-interactive rounded-container-token border-2 border-surface-900 dark:border-surface-400 w-full !shadow-2xl"
+      >
+        <thead class="rounded-container-token">
+          <tr class="bg-surface-900 dark:bg-surface-600 text-white">
+            <th
+              class="text-center text-white text-lg cursor-pointer group"
+              use:popup={assetPopup}
+            >
+			<div class="relative w-fit mx-auto">
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="currentColor"
+					class="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 group-hover:opacity-100 opacity-0"
+					viewBox="0 0 256 256"
+					><path
+					d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+					opacity="0.2"
+					></path><path
+					d="M144,176a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176Zm88-48A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128ZM124,96a12,12,0,1,0-12-12A12,12,0,0,0,124,96Z"
+					></path></svg
+				>
+				Assets
+			</div>
+              <div
+                class="bg-black text-white font-normal p-4 text-sm rounded-container-token max-w-72 normal-case"
+                data-popup="assetPopup"
+              >
+                An asset can be anything you own that's expected to increase in value,
+                like an index fund, stocks or gold.
+				<div class="arrow bg-black" />
+              </div>
+            </th>
+            <th
+              class="text-center text-white text-lg cursor-pointer group"
+              use:popup={currentValuePopup}
+            >
+				<div class="relative w-fit mx-auto">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						class="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 group-hover:opacity-100 opacity-0"
+						viewBox="0 0 256 256"
+						><path
+						d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+						opacity="0.2"
+						></path><path
+						d="M144,176a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176Zm88-48A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128ZM124,96a12,12,0,1,0-12-12A12,12,0,0,0,124,96Z"
+						></path></svg
+					>
+					Current Value
+				</div>
+              <div
+                class="bg-black font-normal px-3 py-2 text-sm rounded-container-token max-w-72 normal-case"
+                data-popup="currentValuePopup"
+              >
+				The value of the asset, in the currency of your choice.
+				<div class="arrow bg-black" />
+              </div>
+            </th>
+
+            <th
+              class="text-center text-white text-lg cursor-pointer group"
+              use:popup={targetAllocationPopup}
+            >
+				<div class="relative w-fit mx-auto">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						class="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 group-hover:opacity-100 opacity-0"
+						viewBox="0 0 256 256"
+						><path
+						d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+						opacity="0.2"
+						></path><path
+						d="M144,176a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176Zm88-48A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128ZM124,96a12,12,0,1,0-12-12A12,12,0,0,0,124,96Z"
+						></path></svg
+					>
+					Target Allocation (%)
+				</div>
+
+              <div
+                class="bg-black font-normal px-3 py-2 text-sm rounded-container-token max-w-72 normal-case"
+                data-popup="targetAllocationPopup"
+              >
+                The percentage of the total portfolio value you want to allocate to the asset.
+				<div class="arrow bg-black" />
+              </div>
+            </th>
+            <th class="text-center">
+              <button on:click={addFund} class="variant-filled-secondary">
+                <!--{chosenPreset !== "Choose preset" ? "bg-surface-500/50 text-gray-400 hover:bg-none cursor-not-allowed" : "variant-filled-secondary"}-->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  class="w-6 h-6 mr-1"
+                >
+                  <path
+                    d="M6 3a3 3 0 0 0-3 3v2.25a3 3 0 0 0 3 3h2.25a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3H6ZM15.75 3a3 3 0 0 0-3 3v2.25a3 3 0 0 0 3 3H18a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3h-2.25ZM6 12.75a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h2.25a3 3 0 0 0 3-3v-2.25a3 3 0 0 0-3-3H6ZM17.625 13.5a.75.75 0 0 0-1.5 0v2.625H13.5a.75.75 0 0 0 0 1.5h2.625v2.625a.75.75 0 0 0 1.5 0v-2.625h2.625a.75.75 0 0 0 0-1.5h-2.625V13.5Z"
+                  />
+                </svg>
+                Add fund</button
+              >
+            </th>
+          </tr>
+        </thead>
+        <tbody class="rounded-container-token">
+          {#each funds as fund, i}
+            <tr id="fund-{i + 1}">
+              <td on:click={() => focusInput(`name-${i}`)} class="cursor-text">
+                <label class="">
+                  <input
+                    id={`name-${i}`}
+                    class=""
+                    bind:value={fund.name}
+                    type="text"
+                    placeholder="Fund name"
+                  />
+                </label>
+              </td>
+              <td
+                on:click={() => focusInput(`amount-${i}`)}
+                class="cursor-text"
+              >
+                <label>
+                  <input
+                    id={`amount-${i}`}
+                    bind:value={fund.amount}
+                    type="number"
+                    placeholder="Amount"
+                    class="relative after:"
+                  />
+                </label>
+              </td>
+              <td
+                on:click={() => focusInput(`desired_perc-${i}`)}
+                class="cursor-text"
+              >
+                <label>
+                  <input
+                    id={`desired_perc-${i}`}
+                    bind:value={fund.desired_perc}
+                    type="number"
+                    placeholder="Desired %"
+                  />
+                </label>
+              </td>
+              <td class="text-center cursor-default">
+                <button
+                  use:popup={{
+                    event: "click",
+                    target: `removePopup-${i + 1}`,
+                    placement: "left",
+                    closeQuery: "popupMustClose",
+                  }}
+                  class="py-2 h-fit btn rounded-container-token px-2 text-black hover:bg-surface-hover-token outline-none border-2 border-surface-400-500-token"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
+                    fill="currentColor"
+                    class="w-6 h-6"
+                    viewBox="0 0 256 256"
+                    ><path
+                      d="M200,56V208a8,8,0,0,1-8,8H64a8,8,0,0,1-8-8V56Z"
+                      opacity="0.2"
+                    ></path><path
+                      d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"
+                    ></path></svg
+                  >
+                </button>
+                <div
+                  class="card shadow-sm p-0"
+                  data-popup="removePopup-{i + 1}"
+                >
+                  <button
+                    on:click={() => removeFund(fund.id)}
+                    class="popupMustClose bg-black py-2 px-2"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="32"
+                      height="32"
+                      fill="currentColor"
+                      class="w-6 h-6"
+                      viewBox="0 0 256 256"
+                      ><path
+                        d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+                        opacity="0.2"
+                      ></path><path
+                        d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"
+                      ></path></svg
+                    >
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {/each}
+          <tr>
+            <th colspan="1" class="cursor-pointer group" use:popup={newCapitalPopup}>
+				<div class="relative w-fit mx-auto">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="currentColor"
+						class="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 group-hover:opacity-100 opacity-0"
+						viewBox="0 0 256 256"
+						><path
+						d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+						opacity="0.2"
+						></path><path
+						d="M144,176a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176Zm88-48A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128ZM124,96a12,12,0,1,0-12-12A12,12,0,0,0,124,96Z"
+						></path></svg
+					>
+					Amount to add
+				</div>
+			<div
+				class="bg-black text-white font-normal px-3 py-2 text-sm rounded-container-token max-w-72 normal-case"
+				data-popup="newCapitalPopup"
+		  	>
+			The amount of money you want to add to your portfolio.
+			<div class="arrow bg-black" />
+		  </div>
+			</th>
+            <td on:click={() => focusInput(`to_add`)} class="cursor-text">
+              <input
+                id="to_add"
+                bind:value={toAdd}
+                class="w-ful text-center"
+                placeholder="Portfolio amount"
+                type="number"
+              />
+            </td>
+            <td on:click={() => focusInput(`to_add`)} class="cursor-not-allowed"
+            ></td>
+            <td on:click={() => focusInput(`to_add`)} class="cursor-not-allowed"
+            ></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr
+            class="bg-surface-900 dark:bg-surface-600 text-white rounded-container-token"
+          >
+            <th colspan="1" class="text-center">New Portfolio Total</th>
+            <td class="text-center relative cursor-default"> {portfolioSum}</td>
+            <td colspan="2" class="">
+              <div class="w-full flex items-center">
+                <ToggleConfetti>
+                  <button
+                    slot="label"
+                    class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token pr-4"
+                    on:click={generate}
+                    bind:this={buttonElement}
+                  >
+                    Generate
+                    <span
+                      class="flex flex-row flex-nowrap pl-2 pr-0 mr-0 text-tertiary-700"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                        class="w-5 h-5"
+                        viewBox="0 0 256 256"
+                        ><path
+                          d="M180,140H164V116h16a40,40,0,1,0-40-40V92H116V76a40,40,0,1,0-40,40H92v24H76a40,40,0,1,0,40,40V164h24v16a40,40,0,1,0,40-40ZM164,76a16,16,0,1,1,16,16H164ZM60,76a16,16,0,0,1,32,0V92H76A16,16,0,0,1,60,76ZM92,180a16,16,0,1,1-16-16H92Zm24-64h24v24H116Zm64,80a16,16,0,0,1-16-16V164h16a16,16,0,0,1,0,32Z"
+                        ></path></svg
+                      >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                        class="w-5 h-5"
+                        viewBox="0 0 256 256"
+                        ><path
+                          d="M71.51,144.49a12,12,0,0,1,0-17l24-24a12,12,0,0,1,17,17L109,124h55V104a12,12,0,0,1,24,0v32a12,12,0,0,1-12,12H109l3.52,3.51a12,12,0,0,1-17,17ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"
+                        ></path></svg
+                      >
+                    </span>
+                  </button>
+                  {#if generated}
+                    <Confetti
+                      y={[-1.5, 1.5]}
+                      x={[-1.5, 1.5]}
+                      noGravity
+                      duration="500"
+                      amount="150"
+                    />
+                  {:else if hasError}
+                    <Confetti
+                      y={[-0.5, 0.5]}
+                      x={[-0.5, 0.5]}
+                      noGravity
+                      duration="250"
+                      colorArray={["#646464", "#c8c8c8"]}
+                    />
+                  {/if}
+                </ToggleConfetti>
+              </div>
+            </td>
+          </tr>
+          {#if generated}
+            <tr class="rounded-bl-container-token rounded-br-container-token">
+              <td colspan="4">
+                <details
+                  class="w-full"
+                  bind:open={generated}
+                  transition:slide={{ duration: 100 }}
+                >
+                  <summary style="display: none;"></summary>
+                  <div class="transition-all duration-150 m-4">
+                    <span class="font-bold"
+                      >Follow these steps to rebalance your portfolio:
+                    </span>
+                    <ol class="list py-4">
+                      {#each advice as item, i}
+                        <li class="py-3">
+                          <span id="numberSpan" class="text-black">{i + 1}</span>
+                          <span class="flex-auto">{@html item}</span>
+                        </li>
+                        <!-- ... -->
+                      {/each}
+                    </ol>
+                    <div class="flex flex-row flex-nowrap gap-x-4">
+                      <div class="flex items-center gap-x-2 pt-4">
+                        <button
+                          class="btn variant-filled rounded-container-token border-2 border-black"
+                          on:click={handleCopyButtonClick}
+                          use:clipboard={adviceString}
+                        >
+                          <div class="relative w-6 h-6 mr-1">
+                            {#if !showThumbsUp}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                in:fade={{ duration: 75 }}
+                                width="32"
+                                height="32"
+                                fill="currentColor"
+                                class="w-6 h-6 mr-1"
+                                viewBox="0 0 256 256"
+                                ><path
+                                  d="M216,40V168H168V88H88V40Z"
+                                  opacity="0.2"
+                                ></path><path
+                                  d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"
+                                ></path></svg
+                              >
+                            {:else}
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                out:fade={{ duration: 75 }}
+                                width="32"
+                                height="32"
+                                fill="currentColor"
+                                class="text-xl absolute -top-1 left-0 pr-1 pt-1"
+                                viewBox="0 0 256 256"
+                                ><path
+                                  d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+                                  opacity="0.2"
+                                ></path><path
+                                  d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"
+                                ></path></svg
+                              >
+                            {/if}
+                          </div>
+                          Copy
+                        </button>
+                      </div>
+                      <button
+                        class="btn border-2 border-black rounded-container-token mt-4 text-black hover:bg-primary-hover-token"
+                        bind:this={restartButtonElement}
+                        on:click={() => (generated = false)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="32"
+                          height="32"
+                          fill="currentColor"
+                          class="w-5 h-5 mr-1"
+                          viewBox="0 0 256 256"
+                          ><path
+                            d="M20,128A76.08,76.08,0,0,1,96,52h99l-3.52-3.51a12,12,0,1,1,17-17l24,24a12,12,0,0,1,0,17l-24,24a12,12,0,0,1-17-17L195,76H96a52.06,52.06,0,0,0-52,52,12,12,0,0,1-24,0Zm204-12a12,12,0,0,0-12,12,52.06,52.06,0,0,1-52,52H61l3.52-3.51a12,12,0,1,0-17-17l-24,24a12,12,0,0,0,0,17l24,24a12,12,0,1,0,17-17L61,204h99a76.08,76.08,0,0,0,76-76A12,12,0,0,0,224,116Z"
+                          ></path></svg
+                        >
+                        Restart
+						<span class="text-surface-400/50 font-bold text-sm">Esc</span>
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {/if}
+        </tfoot>
+      </table>
+      <!--
 			<div class="bg-surface-50-900-token !text-surface-900-50-token w-full pt-10">
 			<h2 class="mb-2 text-xl font-bold w-full text-center">FAQ</h2>
 			<Accordion autocollapse>
@@ -435,10 +858,10 @@
 			</Accordion>
 		</div>
 		-->
-	</div>
-	{/if}
-  </div>
+    </div>
+  {/if}
+</div>
 
-  <!--
+<!--
 	Write me sveltekit code that alternates three variables in a certain rhythm, as though they are notes, or a discolamp that can form a rhythm. The colors are: !shadow-tertiary-700 !shadow-secondary-700 and !shadow-primary-700. You must allow me to alternate these colors in a certain proportion to each other easily. 
   -->
