@@ -63,7 +63,17 @@
 		offset: 8,
 		},
 	};
-
+	const algorithmInfoPopup = {
+		event: "click",
+		target: "algorithmInfoPopup",
+		placement: "bottom",
+		middleware: {
+		shift: {
+			padding: 8,
+		},
+		offset: 8,
+		},
+	};
 
 	let presets = data.data
 
@@ -113,6 +123,57 @@
 			-->
 			<button
               class="text-center text-black text-lg cursor-pointer inline-flex gap-1"
+              use:popup={algorithmInfoPopup}
+            >
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					fill="currentColor"
+					class="inline-flex h-5 w-5"
+					viewBox="0 0 256 256"
+					><path
+					d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"
+					opacity="0.2"
+					></path><path
+					d="M144,176a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176Zm88-48A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128ZM124,96a12,12,0,1,0-12-12A12,12,0,0,0,124,96Z"
+					></path></svg
+				>
+				How does the algorithm work?
+            </button>
+			<div
+				class="bg-black text-white font-normal p-4 text-sm rounded-container-token max-w-96 normal-case -translate-x-4"
+				data-popup="algorithmInfoPopup"
+			>
+				The algorithm adjusts asset values by:
+				<ol class="list">
+					<li>
+					  <span class="!text-white">1.</span>
+					  <span class="!text-white">Finding the difference between the desired and actual values of each asset.</span>
+					</li>
+					<li>
+					  <span class="!text-white">2.</span>
+					  <span class="!text-white">Splitting assets into two groups: those needing more funds (underweighted) and those with too much (overweighted).</span>
+					</li>
+					<li>
+					  <span class="!text-white">3.</span>
+					  <span class="!text-white">Ordering each group by how far they are from their target, from most to least.</span>
+					</li>
+					<li>
+					  <span class="!text-white">4.</span>
+					  <span class="!text-white">Going through these sorted groups to either add funds to the underweighted or remove from the overweighted, using available cash.</span>
+					</li>
+					<li>
+					  <span class="!text-white">5.</span>
+					  <span class="!text-white">Transferring funds directly between assets if one needs money and another has excess.</span>
+					</li>
+					<li>
+					  <span class="!text-white">6.</span>
+					  <span class="!text-white">The process is repeated until all assets are very close to their target.</span>
+					</li>
+				  </ol>
+				<div class="arrow bg-black" />
+		  </div>
+			<button
+              class="text-center text-black text-lg cursor-pointer inline-flex gap-1"
               use:popup={presetInfoPopup}
             >
 				<svg
@@ -133,10 +194,10 @@
 				class="bg-black text-white font-normal p-4 text-sm rounded-container-token max-w-72 normal-case -translate-x-4"
 				data-popup="presetInfoPopup"
 			>
-				Presets represent common combinations of index funds with proportions based on market capitalisation. They are sourced on the fly from <a class="text-secondary-500 hover:underline" href="https://marketcaps.site/">https://marketcaps.site/</a>. By investing according to market capitalisation, you focus on each part of the economy, relative to its size. Like you're placing a bet on the entire world's economy.
+				Presets represent common combinations of index funds with proportions based on market capitalisation. They are sourced on the fly from <a class="text-secondary-500 hover:underline" href="https://marketcaps.site/">https://marketcaps.site/</a>. By investing according to market capitalisation, you focus on each part of the economy, relative to its size. It's like placing a bet on the entire world's economy, rather than any company or part in particular.
 				<div class="arrow bg-black" />
 		  </div>
-			<button use:popup={presetMenu} class="py-2 w-52 h-fit btn rounded-container-token bg-surface-400/10 dark:bg-surface-900/0.7 border-2 border-black hover:bg-surface-400/30 text-black flex flex-row flex-nowrap justify-between">
+			<button use:popup={presetMenu} class="py-2 w-52 h-fit btn rounded-container-token bg-surface-400/10 dark:bg-surface-900/0.7 border-2 border-black hover:bg-surface-400/30 text-black flex flex-row flex-nowrap justify-between !mr-12">
 				<span class="capitalize font-semibold">{chosenPreset ?? 'Choose preset'}</span>
 				<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5 inline" viewBox="0 0 256 256"><path d="M184.49,167.51a12,12,0,0,1,0,17l-48,48a12,12,0,0,1-17,0l-48-48a12,12,0,0,1,17-17L128,207l39.51-39.52A12,12,0,0,1,184.49,167.51Zm-96-79L128,49l39.51,39.52a12,12,0,0,0,17-17l-48-48a12,12,0,0,0-17,0l-48,48a12,12,0,0,0,17,17Z"></path></svg>
 			</button>
@@ -165,6 +226,8 @@
 					{/if}
 				{/each}
 			</div>
+				<a target="_blank" href="https://github.com/koenraijer/reasset" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>

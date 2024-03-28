@@ -147,6 +147,27 @@
 
   let hasError = false;
 
+  /**
+   * Generates investment advice based on the provided funds and portfolio information.
+   * 
+   * The function performs the following steps:
+   * 1. Checks if there are any funds. If not, displays an error message.
+   * 2. Checks if the desired percentages of the funds add up to 100%. If not, displays an error message.
+   * 3. Checks if the cash outflow is greater than the total portfolio value. If so, displays an error message.
+   * 4. Checks if any required fields are missing. If so, displays an error message.
+   * 5. Calculates the desired value per fund and the difference between the current and desired values.
+   * 6. Splits the funds into two arrays: one for funds where you need to add and one for funds where you need to remove.
+   * 7. Sorts the funds where you need to add in descending order of difference.
+   * 8. Sorts the funds where you need to remove in ascending order of difference.
+   * 9. Keeps track of the remaining cash inflow.
+   * 10. Iterates until the remaining cash inflow is zero or close enough:
+   *    - Adds the minimum amount to funds where you need to add.
+   *    - Removes the minimum amount from funds where you need to remove.
+   *    - Transfers the minimum amount between funds where necessary.
+   * 11. Generates investment advice based on the actions taken.
+   * 
+   * @returns {void}
+   */
   function generate() {
 	hasError = false
     advice = [];
@@ -414,8 +435,9 @@
 </script>
 
 <div
-  class="container h-full mx-auto flex flex-col flex-nowrap pb-24 justify-start"
+  class="container h-full mx-auto flex flex-col flex-nowrap pb-24 justify-start relative"
 >
+
   <div class="text-center" id="hero">
     <h1
       class="titleClasses font-extrabold mb-6"
@@ -436,7 +458,7 @@
       ></div>
     </div>
   {:else}
-    <div class="table-container w-full !shadow-2xl {currentColor}">
+    <div class="table-container w-full !shadow-2xl {currentColor} transition-shadow">
       <!-- Native Table Element -->
       <table
         class="table table-interactive rounded-container-token border-2 border-surface-900 dark:border-surface-400 w-full !shadow-2xl"
@@ -744,7 +766,7 @@
           </tr>
           {#if generated}
             <tr class="rounded-bl-container-token rounded-br-container-token">
-              <td colspan="4">
+              <td colspan="4" class="rounded-bl-container-token rounded-br-container-token">
                 <details
                   class="w-full"
                   bind:open={generated}
