@@ -18,7 +18,7 @@
 
 html,
 body {
-	@apply h-full overflow-hidden text-surface-900-50-token text-lg;
+	@apply h-full overflow-hidden text-surface-900-50-token;
 }
 
 input {
@@ -26,7 +26,7 @@ input {
 }
 
 button {
-	@apply btn text-surface-50-900-token rounded-container-token
+	@apply btn text-surface-50-900-token rounded-container-token text-base
 }
 
 label {
@@ -67,7 +67,7 @@ td:has(input)::after {
 }
 
 ol li #numberSpan {
-	@apply bg-[#aeaeae] border-black text-black border-2 rounded-full h-6 w-6 flex items-center justify-center mr-2
+	@apply bg-[#aeaeae] border-black text-black border-2 rounded-full h-8 w-8 flex items-center justify-center mr-2 font-bold
 }
 
 ol li {
@@ -127,19 +127,16 @@ ol li {
 	font-style: oblique 15deg;
 }
 .titleClasses {
-    font-size: 6.2rem !important;
 	font-stretch: 150%;
 	font-weight: 900;
 	font-style: oblique 15deg;
-	@apply pt-28 pb-6 transition-all duration-150;
+	@apply pt-28 transition-all duration-150 text-2xl md:text-4xl lg:text-7xl
 }
 
 .subtitleClasses {
 	font-family: 'HubotSans' !important;
-	font-size: 1.25rem !important;
-	font-style: oblique deg;
-	letter-spacing: 0.01em;
-	@apply mb-24 transition-all duration-150;
+	font-style: oblique 5deg;
+	@apply mb-24 transition-all duration-150 text-base md:text-lg lg:text-lg
 } 
 
 .svgClasses {

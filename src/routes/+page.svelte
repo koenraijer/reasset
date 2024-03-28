@@ -63,25 +63,7 @@
 
   /* ------------------- MODAL ------------------- */
   const modalStore = getModalStore();
-  const modal = {
-    type: "confirm",
-    modalClasses: "p-8 text-base border-2 border-black",
-    // Data
-    title: "Are you sure you wish to remove the preset?",
-    body: "Removing the preset will delete all configured funds. This action cannot be undone.",
-    // TRUE if confirm pressed, FALSE if cancel pressed
-    response: (r) => {
-      $triggerConfirmModal = false;
-      if (r) {
-        fundsStore.set([]); // update the store
-        chosenPresetStore.set("Choose preset");
-        confirmed = true;
-        generated = false;
-      } else {
-        chosenPreset = previousPreset; // Revert to the previous preset
-      }
-    },
-  };
+  
   let confirmed = true; // TRUE if confirm pressed, FALSE if cancel pressed
 
   /* ------------------- PRESET ------------------- */
@@ -399,7 +381,7 @@
   const newCapitalPopup = {
 	event: "click",
 	target: "newCapitalPopup",
-	placement: "left",
+	placement: "top",
 	middleware: {
 	  shift: {
 		padding: 8,
@@ -458,15 +440,15 @@
       ></div>
     </div>
   {:else}
-    <div class="table-container w-full !shadow-2xl {currentColor} transition-shadow">
+    <div class="table-container !w-fit mx-auto !shadow-2xl {currentColor} transition-shadow">
       <!-- Native Table Element -->
       <table
         class="table table-interactive rounded-container-token border-2 border-surface-900 dark:border-surface-400 w-full !shadow-2xl"
       >
-        <thead class="rounded-container-token">
+        <thead class="rounded-container-token text-base">
           <tr class="bg-surface-900 dark:bg-surface-600 text-white">
             <th
-              class="text-center text-white text-lg cursor-pointer group"
+              class="text-center text-white cursor-pointer group"
               use:popup={assetPopup}
             >
 			<div class="relative w-fit mx-auto">
@@ -494,7 +476,7 @@
               </div>
             </th>
             <th
-              class="text-center text-white text-lg cursor-pointer group"
+              class="text-center text-white cursor-pointer group"
               use:popup={currentValuePopup}
             >
 				<div class="relative w-fit mx-auto">
@@ -522,7 +504,7 @@
             </th>
 
             <th
-              class="text-center text-white text-lg cursor-pointer group"
+              class="text-center text-white cursor-pointer group"
               use:popup={targetAllocationPopup}
             >
 				<div class="relative w-fit mx-auto">
@@ -567,7 +549,7 @@
             </th>
           </tr>
         </thead>
-        <tbody class="rounded-container-token">
+        <tbody class="rounded-container-token text-base">
           {#each funds as fund, i}
             <tr id="fund-{i + 1}">
               <td on:click={() => focusInput(`name-${i}`)} class="cursor-text">
@@ -707,60 +689,62 @@
             <th colspan="1" class="text-center">New Portfolio Total</th>
             <td class="text-center relative cursor-default"> {portfolioSum}</td>
             <td colspan="2" class="">
-              <div class="w-full flex items-center">
-                <ToggleConfetti>
-                  <button
-                    slot="label"
-                    class="w-fit mx-auto text-xl font-semibold bg-tertiary-active-token pr-4"
-                    on:click={generate}
-                    bind:this={buttonElement}
-                  >
-                    Generate
-                    <span
-                      class="flex flex-row flex-nowrap pl-2 pr-0 mr-0 text-tertiary-700"
+              <div class="w-full flex place-content-center">
+                <div class="w-fit">
+                  <ToggleConfetti>
+                    <button
+                      slot="label"
+                      class="w-fit mx-auto font-semibold bg-tertiary-active-token pr-4"
+                      on:click={generate}
+                      bind:this={buttonElement}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        fill="currentColor"
-                        class="w-5 h-5"
-                        viewBox="0 0 256 256"
-                        ><path
-                          d="M180,140H164V116h16a40,40,0,1,0-40-40V92H116V76a40,40,0,1,0-40,40H92v24H76a40,40,0,1,0,40,40V164h24v16a40,40,0,1,0,40-40ZM164,76a16,16,0,1,1,16,16H164ZM60,76a16,16,0,0,1,32,0V92H76A16,16,0,0,1,60,76ZM92,180a16,16,0,1,1-16-16H92Zm24-64h24v24H116Zm64,80a16,16,0,0,1-16-16V164h16a16,16,0,0,1,0,32Z"
-                        ></path></svg
+                      Generate
+                      <span
+                        class="flex flex-row flex-nowrap pl-2 pr-0 mr-0 text-tertiary-700"
                       >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="32"
-                        height="32"
-                        fill="currentColor"
-                        class="w-5 h-5"
-                        viewBox="0 0 256 256"
-                        ><path
-                          d="M71.51,144.49a12,12,0,0,1,0-17l24-24a12,12,0,0,1,17,17L109,124h55V104a12,12,0,0,1,24,0v32a12,12,0,0,1-12,12H109l3.52,3.51a12,12,0,0,1-17,17ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"
-                        ></path></svg
-                      >
-                    </span>
-                  </button>
-                  {#if generated}
-                    <Confetti
-                      y={[-1.5, 1.5]}
-                      x={[-1.5, 1.5]}
-                      noGravity
-                      duration="500"
-                      amount="150"
-                    />
-                  {:else if hasError}
-                    <Confetti
-                      y={[-0.5, 0.5]}
-                      x={[-0.5, 0.5]}
-                      noGravity
-                      duration="250"
-                      colorArray={["#646464", "#c8c8c8"]}
-                    />
-                  {/if}
-                </ToggleConfetti>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="32"
+                          height="32"
+                          fill="currentColor"
+                          class="w-5 h-5"
+                          viewBox="0 0 256 256"
+                          ><path
+                            d="M180,140H164V116h16a40,40,0,1,0-40-40V92H116V76a40,40,0,1,0-40,40H92v24H76a40,40,0,1,0,40,40V164h24v16a40,40,0,1,0,40-40ZM164,76a16,16,0,1,1,16,16H164ZM60,76a16,16,0,0,1,32,0V92H76A16,16,0,0,1,60,76ZM92,180a16,16,0,1,1-16-16H92Zm24-64h24v24H116Zm64,80a16,16,0,0,1-16-16V164h16a16,16,0,0,1,0,32Z"
+                          ></path></svg
+                        >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="32"
+                          height="32"
+                          fill="currentColor"
+                          class="w-5 h-5"
+                          viewBox="0 0 256 256"
+                          ><path
+                            d="M71.51,144.49a12,12,0,0,1,0-17l24-24a12,12,0,0,1,17,17L109,124h55V104a12,12,0,0,1,24,0v32a12,12,0,0,1-12,12H109l3.52,3.51a12,12,0,0,1-17,17ZM236,56V200a20,20,0,0,1-20,20H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216A20,20,0,0,1,236,56Zm-24,4H44V196H212Z"
+                          ></path></svg
+                        >
+                      </span>
+                    </button>
+                    {#if generated}
+                      <Confetti
+                        y={[-1.5, 1.5]}
+                        x={[-1.5, 1.5]}
+                        noGravity
+                        duration="500"
+                        amount="150"
+                      />
+                    {:else if hasError}
+                      <Confetti
+                        y={[-0.5, 0.5]}
+                        x={[-0.5, 0.5]}
+                        noGravity
+                        duration="250"
+                        colorArray={["#646464", "#c8c8c8"]}
+                      />
+                    {/if}
+                  </ToggleConfetti>
+                </div>
               </div>
             </td>
           </tr>
@@ -774,14 +758,21 @@
                 >
                   <summary style="display: none;"></summary>
                   <div class="transition-all duration-150 m-4">
-                    <span class="font-bold"
-                      >Follow these steps to rebalance your portfolio:
+                    <span class="font-bold text-lg normal-case"
+                      >The most efficient way to rebalance your portfolio
                     </span>
-                    <ol class="list py-4">
+                    <ol class="py-4">
                       {#each advice as item, i}
-                        <li class="py-3">
-                          <span id="numberSpan" class="text-black">{i + 1}</span>
-                          <span class="flex-auto">{@html item}</span>
+                        <li class="py-3 flex flex-col flex-nowrap text-left !items-start border-b-2 !border-surface-300/50">
+                          <div class="flex flex-row flex-nowrap w-fit items-start pb-4">
+                            <span class="mr-2 font-bold uppercase">Step</span>
+                            <span id="numberSpan" class="text-black">{i + 1}</span>
+                          </div>
+                          <label class="flex items-center space-x-2">
+                            <input class="checkbox bg-black" type="checkbox"/>
+                                <span class="ml-2">{@html item}</span>
+                          </label>
+                          <hr class="!border-t-2 divider" />
                         </li>
                         <!-- ... -->
                       {/each}
@@ -793,7 +784,7 @@
                           on:click={handleCopyButtonClick}
                           use:clipboard={adviceString}
                         >
-                          <div class="relative w-6 h-6 mr-1">
+                          <div class="relative w-6 h-6 mr-2">
                             {#if !showThumbsUp}
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -801,7 +792,7 @@
                                 width="32"
                                 height="32"
                                 fill="currentColor"
-                                class="w-6 h-6 mr-1"
+                                class="w-7 h-7 mr-1"
                                 viewBox="0 0 256 256"
                                 ><path
                                   d="M216,40V168H168V88H88V40Z"
@@ -817,7 +808,7 @@
                                 width="32"
                                 height="32"
                                 fill="currentColor"
-                                class="text-xl absolute -top-1 left-0 pr-1 pt-1"
+                                class="absolute -top-1 left-0 pr-1 pt-1 w-7 h-7"
                                 viewBox="0 0 256 256"
                                 ><path
                                   d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z"

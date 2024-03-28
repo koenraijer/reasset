@@ -25,6 +25,7 @@
   "type": "module",
   "dependencies": {
     "@floating-ui/dom": "1.6.0",
-    "node-html-parser": "^6.1.12"
+    "node-html-parser": "^6.1.12",
+    "tailwindcss-fluid-type": "^2.0.6"
   }
 }
